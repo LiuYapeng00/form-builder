@@ -1,26 +1,55 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
+import type { FormInstance } from 'element-plus'
 import RecursiveForm from '@/components/renderer/RecursiveForm.vue'
 import { createFormValue } from '@/core/engine/values'
+import { buildFormRules } from '@/core/engine/validate'
+import { pruneHiddenValues } from '@/core/engine/visibility'
 import { leaveSampleSchema as schema } from '@/samples/leave'
 
 const model = reactive(createFormValue(schema.fields))
+const formRef = ref<FormInstance>()
+const formRules = computed(() => buildFormRules(schema.fields, model))
+const submittedJson = ref<string | null>(null)
+
+async function onSubmit(): Promise<void> {
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (!valid) {
+    submittedJson.value = null
+    return
+  }
+
+  // 隐藏字段不进提交数据；返回新对象，页面上的 model 保持原样
+  submittedJson.value = JSON.stringify(pruneHiddenValues(schema.fields, model), null, 2)
+  ElMessage.success('校验通过')
+}
 </script>
 
 <template>
   <main class="page">
     <section class="card">
       <h1>{{ schema.name }}</h1>
-      <p class="hint">T09 手测用：改任意控件，右侧/下方 JSON 应实时变化；子表单可增删行。</p>
+      <p class="hint">T10 手测用：必填 / 正则 / 范围错误应红字提示并阻断提交。</p>
 
-      <el-form :model="model" label-position="top">
+      <el-form ref="formRef" :model="model" :rules="formRules" label-position="top" @submit.prevent>
         <RecursiveForm :fields="schema.fields" :model="model" :layout="schema.layout" />
+
+        <div class="actions">
+          <el-button type="primary" @click="onSubmit">{{
+            schema.submit?.text ?? '提交'
+          }}</el-button>
+        </div>
       </el-form>
     </section>
 
     <aside class="snapshot">
       <h2>当前表单值</h2>
       <pre>{{ JSON.stringify(model, null, 2) }}</pre>
+
+      <template v-if="submittedJson">
+        <h2>校验通过快照（T12 接提交适配器）</h2>
+        <pre>{{ submittedJson }}</pre>
+      </template>
     </aside>
   </main>
 </template>
@@ -41,6 +70,10 @@ const model = reactive(createFormValue(schema.fields))
   border-radius: 10px;
 }
 
+.actions {
+  padding-top: 8px;
+}
+
 .snapshot {
   position: sticky;
   top: 24px;
@@ -59,8 +92,12 @@ const model = reactive(createFormValue(schema.fields))
   font-weight: 600;
 }
 
+.snapshot h2 + pre {
+  margin-bottom: 20px;
+}
+
 .snapshot pre {
-  margin: 0;
+  margin: 0 0 16px;
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 12px;
   line-height: 1.6;

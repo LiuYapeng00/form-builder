@@ -9,6 +9,7 @@
 import { computed } from 'vue'
 import type { FieldNode, FormLayout } from '@/core/schema/types'
 import { createRowValue } from '@/core/engine/values'
+import { visibleFields } from '@/core/engine/visibility'
 import FieldRenderer from './FieldRenderer.vue'
 
 const props = withDefaults(
@@ -39,6 +40,9 @@ const columns = computed(() =>
  * 这里缓存引用后只改它的内容，避免 ESLint 把"改嵌套值"误判成"改 prop"。
  */
 const scope = props.model
+
+/** 按 visibleWhen 过滤；子表单每行是独立作用域，所以递归时会自动逐行求值 */
+const shownFields = computed(() => visibleFields(props.fields, scope))
 
 /** 单列布局一格占满；栅格布局按总列数均分，字段可用 layout.span 跨列 */
 function colSpan(field: FieldNode): number {
@@ -86,7 +90,7 @@ function setFieldValue(field: FieldNode, value: unknown): void {
 
 <template>
   <el-row :gutter="16">
-    <el-col v-for="field in fields" :key="field.id" :span="colSpan(field)">
+    <el-col v-for="field in shownFields" :key="field.id" :span="colSpan(field)">
       <!-- subform：标题 + 行列表，行内字段继续递归 -->
       <section v-if="field.type === 'subform'" class="fb-subform">
         <header class="fb-subform__head">
