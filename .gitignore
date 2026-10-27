@@ -29,3 +29,6 @@ pnpm-debug.log*
 # local scratch
 .playground
 *.local
+
+# 本地私有笔记，只留本机
+.private/
