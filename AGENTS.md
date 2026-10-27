@@ -47,7 +47,7 @@ Vue3 + TS 的可视化表单设计器。一期目标只有一个：
 3. 实现（只碰该任务相关文件）
 4. `pnpm verify` 全绿
 5. 勾选任务清单里的 checkbox，并在该任务行末补 `— ✅ 简述`（若与设计有偏差，同步更新技术方案）
-6. 提交：`feat(designer): T14 点击物料添加字段`
+6. 提交：`feat(designer): T14 add field by clicking material`（英文，见 §7）
 
 标记 🔒 的任务（T06 / T12 / T16 / T20 / T28）涉及已知难点，先讲思路再落代码。
 
