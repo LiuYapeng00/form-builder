@@ -5,56 +5,15 @@
  * - id 用 nanoid 保证唯一
  * - 默认 props 每次深拷贝，杜绝"拖两次后两个字段共享同一份 options 数组"的经典 bug
  *
- * T07 的 field-meta 注册表会把这里的默认值纳入元数据，
- * 到时 factory 只保留"造节点"这一件事。
+ * T07 起默认值收敛到 field-meta 注册表，factory 只保留"造节点"这一件事。
  */
 import { nanoid } from 'nanoid'
-import type {
-  Condition,
-  FieldNode,
-  FieldOption,
-  FieldProps,
-  FieldType,
-  FormSchema,
-  Rule,
-} from './types'
-
-const DEFAULT_LABEL: Record<FieldType, string> = {
-  input: '单行文本',
-  textarea: '多行文本',
-  number: '数字',
-  select: '下拉选择',
-  radio: '单选',
-  checkbox: '多选',
-  switch: '开关',
-  date: '日期',
-  upload: '附件',
-  subform: '子表单',
-  divider: '分割线',
-}
-
-const DEFAULT_OPTIONS: FieldOption[] = [
-  { label: '选项一', value: 'option1' },
-  { label: '选项二', value: 'option2' },
-]
-
-const DEFAULT_PROPS: Record<FieldType, FieldProps> = {
-  input: {},
-  textarea: { rows: 3 },
-  number: { step: 1 },
-  select: { options: DEFAULT_OPTIONS, multiple: false },
-  radio: { options: DEFAULT_OPTIONS },
-  checkbox: { options: DEFAULT_OPTIONS },
-  switch: {},
-  date: {},
-  upload: { maxSizeMB: 5, maxCount: 1 },
-  subform: { columns: 1 },
-  divider: {},
-}
+import { getFieldMeta } from '../meta/field-meta'
+import type { Condition, FieldNode, FieldProps, FieldType, FormSchema, Rule } from './types'
 
 /** 返回一份全新的默认 props，调用方随便改都不会污染注册表 */
 export function getDefaultProps(type: FieldType): FieldProps {
-  return structuredClone(DEFAULT_PROPS[type])
+  return getFieldMeta(type).createDefaultProps()
 }
 
 export interface CreateFieldOptions {
@@ -78,7 +37,7 @@ export function createField(type: FieldType, options: CreateFieldOptions = {}): 
     id: nanoid(),
     name: options.name ?? `${type}_${nanoid(8)}`,
     type,
-    label: options.label ?? DEFAULT_LABEL[type],
+    label: options.label ?? getFieldMeta(type).label,
     props: { ...getDefaultProps(type), ...(options.props ?? {}) },
     rules: [...(options.rules ?? [])],
   }
