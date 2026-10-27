@@ -65,13 +65,20 @@ Vue3 + TS 的可视化表单设计器。一期目标只有一个：
 
 ## 7. 提交规范
 
-Conventional Commits + 中文描述，scope 用目录名：
+Conventional Commits，scope 用目录名，**提交信息一律用英文**：
 
 ```
-feat(core): T05 增加 zod 结构校验与字段工厂
-fix(designer): T16 修复拖拽克隆共享引用
-docs: 更新技术方案 §2.6 拖拽降级方案
-chore: 升级依赖
+feat(core): T05 add zod validation and field factory
+fix(designer): T16 prevent shared reference after drag clone
+docs: update design doc section 2.6 fallback plan
+chore: bump dependencies
 ```
+
+> ⚠️ Windows 编码坑（本机已实测）：这台机器的 git 运行在 cp936 locale 下，
+> 中文字符写入 commit 会全部变成 `?`（message 和 author 都会被破坏）。
+> `i18n.commitEncoding=UTF-8` 也救不回来。所以：
+> - 提交信息只用 ASCII
+> - `git config user.name` 已设为 ASCII 英文名，**不要改回中文**，否则 author 会变 `?????`
+> - 需要中文说明时，用 `-m` 之外的正文写进 PR/文档，不要塞进 commit message
 
 每完成一个 S 阶段（S0/S1/S2/S3）再 push，不要每个任务都推。
