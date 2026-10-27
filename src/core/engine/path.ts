@@ -106,9 +106,7 @@ export function getByPath(model: unknown, path: string): unknown {
 }
 
 /**
- * 写入路径值，成功返回 true；根节点不可写或路径非法返回 false。
- * （§2.5 的伪代码注释写的是「返回 undefined」，这里改成 boolean 是为了让调用方
- *   能判断写入是否成功，语义等价于「失败不抛错」，未改动 Schema 结构。）
+ * 写入路径值，成功返回 true；根节点不可写或路径非法返回 false（不抛错）。
  */
 export function setByPath(model: unknown, path: string, value: unknown): boolean {
   const tokens = parsePath(path)
