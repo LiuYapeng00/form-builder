@@ -19,17 +19,18 @@
 
 ## 目录
 
-| 目录 | 职责 | 对应任务 |
-|---|---|---|
-| `schema/types.ts` | 全部类型定义（已完成） | T04 |
-| `schema/zod.ts` | 运行时结构校验，导入 JSON 用 | T05 |
-| `schema/factory.ts` | createField / createEmptySchema | T05 |
-| `schema/migrate.ts` | schemaVersion 迁移链 | 二期再做 |
-| `meta/field-meta.ts` | 字段元数据注册表（驱动属性面板） | T07 |
-| `engine/path.ts` | 值路径寻址 get/set/deleteByPath | T06 |
-| `engine/validate.ts` | Rule[] → async-validator | T10 |
-| `engine/visibility.ts` | visibleWhen 求值 + 隐藏字段剔除 | T11 |
-| `engine/submit.ts` | SubmitAdapter 接口与 Local 实现 | T12 |
-| `io/import.ts` | 导入 JSON + 错误定位 | T21 |
-| `io/export.ts` | 导出 JSON | T21 |
-| `io/share.ts` | lz-string 链接编解码 + 长度守卫 | T22 |
+| 目录                   | 职责                             | 对应任务 |
+| ---------------------- | -------------------------------- | -------- |
+| `schema/types.ts`      | 全部类型定义（已完成）           | T04      |
+| `schema/zod.ts`        | 运行时结构校验，导入 JSON 用     | T05      |
+| `schema/factory.ts`    | createField / createEmptySchema  | T05      |
+| `schema/migrate.ts`    | schemaVersion 迁移链             | 二期再做 |
+| `meta/field-meta.ts`   | 字段元数据注册表（驱动属性面板） | T07      |
+| `engine/path.ts`       | 值路径寻址 get/set/deleteByPath  | T06      |
+| `engine/values.ts`     | 初始值结构（表单 / 子表单行）    | T09      |
+| `engine/validate.ts`   | Rule[] → async-validator         | T10      |
+| `engine/visibility.ts` | visibleWhen 求值 + 隐藏字段剔除  | T11      |
+| `engine/submit.ts`     | SubmitAdapter 接口与 Local 实现  | T12      |
+| `io/import.ts`         | 导入 JSON + 错误定位             | T21      |
+| `io/export.ts`         | 导出 JSON                        | T21      |
+| `io/share.ts`          | lz-string 链接编解码 + 长度守卫  | T22      |
