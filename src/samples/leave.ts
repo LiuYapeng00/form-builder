@@ -59,7 +59,7 @@ export const leaveSampleSchema: FormSchema = {
       props: { min: 0.5, max: 30, step: 0.5 },
       rules: [
         { type: 'required' },
-        { type: 'range', min: 0.5, max: 30, message: '请假天数需在 0.5 ~ 30 天之间' },
+        { type: 'range', min: 0.5, max: 20, message: '请假天数需在 0.5 ~ 20 天之间' },
       ],
     },
     {
