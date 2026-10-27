@@ -30,11 +30,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # 校验先跑，构建失败就不部署，避免线上变成半成品
-      - run: pnpm verify
-
+      # verify 里已含 build，VITE_BASE 挂在同一步上，产物即部署产物
       # GitHub Pages 在 /<repo>/ 子路径下，base 必须注入
-      - run: pnpm build
+      - run: pnpm verify
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
 
