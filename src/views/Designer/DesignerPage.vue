@@ -12,6 +12,7 @@ import MaterialPanel from './MaterialPanel.vue'
 import PropertyPanel from './PropertyPanel.vue'
 import SchemaIO from './SchemaIO.vue'
 import ShareLink from './ShareLink.vue'
+import TemplatePicker from './TemplatePicker.vue'
 
 const store = useDesignerStore()
 
@@ -60,6 +61,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         <span class="toolbar__meta">
           {{ store.schema.fields.length }} 个字段 · {{ selectionText }}
         </span>
+        <TemplatePicker />
         <SchemaIO />
         <ShareLink />
         <el-button size="small" :disabled="!canUndo" title="Ctrl+Z" @click="store.undo()">
