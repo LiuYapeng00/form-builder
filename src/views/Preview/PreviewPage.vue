@@ -3,7 +3,7 @@
  * 表单填写页 / 一期 W1 里程碑（T12）
  *
  * 数据流：静态 JSON → RecursiveForm 渲染 → el-form 校验 → 剔除隐藏值 → SubmitAdapter → localStorage + JSON 快照。
- * 分享链接解析在 T22 接入，这里先用内置样例 Schema。
+ * T22 接入分享链接解析；T23 补提交成功态、空表单态与 ≤768px 单列布局。
  */
 import { computed, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
@@ -71,6 +71,14 @@ async function onSubmit(): Promise<void> {
     submitting.value = false
   }
 }
+
+/** 成功态下"再填一份"：清空值而不是整页刷新，分享链接参数得以保留 */
+function restart(): void {
+  submitted.value = null
+  for (const key of Object.keys(model)) delete model[key]
+  Object.assign(model, createFormValue(schema.fields))
+  formRef.value?.clearValidate()
+}
 </script>
 
 <template>
@@ -90,25 +98,30 @@ async function onSubmit(): Promise<void> {
     </section>
 
     <template v-else>
-      <section class="card">
+      <section v-if="submitted" class="card card--success">
+        <el-result icon="success" :title="successMsg" sub-title="数据已保存在本机浏览器">
+          <template #extra>
+            <p class="success__line">
+              提交时间：{{ new Date(submitted.submittedAt).toLocaleString('zh-CN') }}
+            </p>
+            <p class="success__line">已写入 localStorage 键：{{ SUBMISSIONS_KEY }}</p>
+            <el-button class="success__again" type="primary" @click="restart"> 再填一份 </el-button>
+          </template>
+        </el-result>
+      </section>
+
+      <section v-else class="card">
         <h1>{{ schema.name }}</h1>
         <p class="hint">表单数据只写入本机 localStorage，不会上传到任何服务器。</p>
 
-        <el-alert
-          v-if="submitted"
-          class="success"
-          type="success"
-          :closable="false"
-          show-icon
-          :title="successMsg"
-        >
-          <p class="success__line">
-            提交时间：{{ new Date(submitted.submittedAt).toLocaleString('zh-CN') }}
-          </p>
-          <p class="success__line">已写入 localStorage 键：{{ SUBMISSIONS_KEY }}</p>
-        </el-alert>
+        <el-empty
+          v-if="schema.fields.length === 0"
+          :image-size="72"
+          description="这个表单还没有字段"
+        />
 
         <el-form
+          v-else
           ref="formRef"
           :model="model"
           :rules="formRules"
@@ -172,13 +185,25 @@ async function onSubmit(): Promise<void> {
   font-size: 13px;
 }
 
-.success {
-  margin-bottom: 20px;
+.card--success {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+
+.card--success :deep(.el-result) {
+  padding: 0;
 }
 
 .success__line {
   margin: 4px 0 0;
+  color: var(--fb-text-muted);
   font-size: 13px;
+}
+
+.success__again {
+  margin-top: 16px;
 }
 
 .actions {
@@ -227,6 +252,26 @@ async function onSubmit(): Promise<void> {
   .snapshot {
     position: static;
     max-height: none;
+  }
+}
+
+/* ≤768px：手机上一切单列，按钮占满宽度，避免横向滚动 */
+@media (max-width: 768px) {
+  .page {
+    gap: 16px;
+    padding: 12px 12px 40px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .card h1 {
+    font-size: 20px;
+  }
+
+  .actions :deep(.el-button) {
+    width: 100%;
   }
 }
 </style>

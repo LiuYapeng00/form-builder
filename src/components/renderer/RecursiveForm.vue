@@ -180,4 +180,12 @@ function setFieldValue(field: FieldNode, value: unknown): void {
   color: var(--fb-text-muted);
   font-size: 12px;
 }
+
+/* ≤768px 强制单列：el-col 的 span 是行内宽度，媒体查询只能靠 CSS 覆盖 */
+@media (max-width: 768px) {
+  :deep(.el-col) {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
 </style>
