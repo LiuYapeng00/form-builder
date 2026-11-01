@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { toRaw } from 'vue'
+import { createEmptySchema, createField } from '@/core/schema/factory'
 import { HISTORY_LIMIT, useDesignerStore } from '@/stores/designer'
 
 beforeEach(() => {
@@ -367,6 +368,41 @@ describe('undo / redo', () => {
         draft.name = 'B'
       }),
     ).not.toThrow()
+  })
+})
+
+describe('loadSchema', () => {
+  it('整树替换，清空选中，且可撤销', () => {
+    const store = useDesignerStore()
+    const target = store.schema.fields[0]!
+    store.select(target.id)
+
+    const next = createEmptySchema('导入的表单')
+    next.fields = [createField('input', { name: 'imported' })]
+
+    store.loadSchema(next)
+
+    expect(store.schema.name).toBe('导入的表单')
+    expect(store.schema.fields).toHaveLength(1)
+    expect(store.schema.fields[0]?.name).toBe('imported')
+    expect(store.selectedId).toBeNull()
+    expect(store.history.past).toHaveLength(1)
+
+    store.undo()
+    expect(store.schema.name).toBe('请假申请')
+    expect(store.schema.fields.length).toBeGreaterThan(1)
+  })
+
+  it('新 schema 没有 submit 时删掉旧文案', () => {
+    const store = useDesignerStore()
+    expect(store.schema.submit).toBeDefined()
+
+    const next = createEmptySchema('无提交文案')
+    delete next.submit
+
+    store.loadSchema(next)
+
+    expect(store.schema.submit).toBeUndefined()
   })
 })
 

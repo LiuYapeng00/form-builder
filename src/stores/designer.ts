@@ -161,6 +161,26 @@ export const useDesignerStore = defineStore('designer', () => {
   }
 
   /**
+   * 整树替换：导入 JSON / 切换模板（T21）
+   *
+   * 走 commit 所以可撤销；导入后清空选中，避免属性面板指向旧字段。
+   * submit 用"有则写、无则删"而不是直接赋值，防止新表单继承了旧表单的提交文案。
+   */
+  function loadSchema(next: FormSchema): void {
+    const copy = structuredClone(toRaw(next))
+    commit((draft) => {
+      draft.schemaVersion = copy.schemaVersion
+      draft.id = copy.id
+      draft.name = copy.name
+      draft.layout = copy.layout
+      draft.fields = copy.fields
+      if (copy.submit) draft.submit = copy.submit
+      else delete draft.submit
+    })
+    select(null)
+  }
+
+  /**
    * 撤销 / 重做（T20）
    *
    * 整树快照互换：把当前树压进另一个栈，再取出快照当新树。
@@ -220,6 +240,7 @@ export const useDesignerStore = defineStore('designer', () => {
     siblingsOf,
     fieldById,
     updateField,
+    loadSchema,
     undo,
     redo,
     commit,
