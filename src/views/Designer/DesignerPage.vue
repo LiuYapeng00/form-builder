@@ -1,33 +1,74 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+/**
+ * 设计器三栏骨架（T13）
+ *
+ * 左物料 / 中画布 / 右属性，三块共享同一个 store 的 schema 与选中态。
+ * T14 接物料点击添加、T15 换成真正的画布渲染、T18/T19 补属性编辑。
+ */
+import { computed } from 'vue'
+import { useDesignerStore } from '@/stores/designer'
+import Canvas from './Canvas.vue'
+import MaterialPanel from './MaterialPanel.vue'
+import PropertyPanel from './PropertyPanel.vue'
 
-const bootedAt = ref(new Date().toLocaleTimeString('zh-CN'))
-const base = import.meta.env.BASE_URL
+const store = useDesignerStore()
+
+const selectionText = computed(() =>
+  store.selectedField ? `已选中「${store.selectedField.label}」` : '未选中字段',
+)
 </script>
 
 <template>
-  <main class="page">
-    <h1>Form Builder · 一期</h1>
-    <p class="hint">脚手架已就绪（T01–T04）。设计器三栏界面在 T13 开始实现。</p>
+  <div class="designer">
+    <header class="toolbar">
+      <h1 class="toolbar__title">{{ store.schema.name }}</h1>
+      <span class="toolbar__meta">
+        {{ store.schema.fields.length }} 个字段 · {{ selectionText }}
+      </span>
+    </header>
 
-    <el-space direction="vertical" :size="10" alignment="start">
-      <el-tag type="success">Element Plus 按需加载正常</el-tag>
-      <span class="mono">base = {{ base }}</span>
-      <span class="mono">启动于 {{ bootedAt }}</span>
-      <el-button type="primary" @click="bootedAt = new Date().toLocaleTimeString('zh-CN')">
-        刷新时间
-      </el-button>
-    </el-space>
-  </main>
+    <div class="workspace">
+      <MaterialPanel />
+      <Canvas
+        :fields="store.schema.fields"
+        :selected-id="store.selectedId"
+        @select="store.select"
+      />
+      <PropertyPanel :field="store.selectedField ?? null" />
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.page {
-  padding: 48px;
+.designer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  font-size: 13px;
-  color: #666;
+
+.toolbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--fb-border);
+}
+
+.toolbar__title {
+  margin: 0;
+  font-size: 16px;
+}
+
+.toolbar__meta {
+  color: var(--fb-text-muted);
+  font-size: 12px;
+}
+
+.workspace {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 240px minmax(0, 1fr) 300px;
+  min-height: 0;
 }
 </style>
