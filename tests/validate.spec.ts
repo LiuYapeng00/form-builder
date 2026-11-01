@@ -36,6 +36,17 @@ describe('buildFieldRules', () => {
     expect(buildFieldRules(field)[0]?.type).toBe('array')
   })
 
+  it('upload 的 required 按文件名数组判空', () => {
+    const [rule] = buildFieldRules(fieldWith('upload', [{ type: 'required' }]))
+
+    expect(rule).toMatchObject({
+      required: true,
+      type: 'array',
+      message: '请上传测试字段',
+      trigger: 'change',
+    })
+  })
+
   it('range 生成数值比较规则，并给出可读文案', () => {
     const [rule] = buildFieldRules(fieldWith('number', [{ type: 'range', min: 0.5, max: 30 }]))
 

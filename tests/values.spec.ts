@@ -4,10 +4,11 @@ import { createField } from '@/core/schema/factory'
 import type { FieldNode } from '@/core/schema/types'
 
 describe('defaultValueForField', () => {
-  it('switch 默认 false，checkbox / subform 默认空数组', () => {
+  it('switch 默认 false，checkbox / subform / upload 默认空数组', () => {
     expect(defaultValueForField(createField('switch'))).toBe(false)
     expect(defaultValueForField(createField('checkbox'))).toEqual([])
     expect(defaultValueForField(createField('subform'))).toEqual([])
+    expect(defaultValueForField(createField('upload'))).toEqual([])
   })
 
   it('普通文本字段没有初始值', () => {

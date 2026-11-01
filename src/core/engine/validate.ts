@@ -39,7 +39,7 @@ function triggerOf(type: FieldType): 'blur' | 'change' {
 
 /** 值是数组的字段：required 必须带 type: 'array'，否则空数组会被判为"已填" */
 function isArrayValue(field: FieldNode): boolean {
-  if (field.type === 'checkbox' || field.type === 'subform') return true
+  if (field.type === 'checkbox' || field.type === 'subform' || field.type === 'upload') return true
   return field.type === 'select' && field.props.multiple === true
 }
 

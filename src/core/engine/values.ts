@@ -16,8 +16,10 @@ export function defaultValueForField(field: FieldNode): unknown {
     case 'switch':
       return false
     // checkbox 一直按多选组渲染，值必须是数组，否则 el-checkbox-group 会报错
+    // upload 提交的是文件名数组，空数组表示还没选文件
     case 'checkbox':
     case 'subform':
+    case 'upload':
       return []
     default:
       return undefined

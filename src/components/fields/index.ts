@@ -13,6 +13,7 @@ import NumberField from './NumberField.vue'
 import SelectField from './SelectField.vue'
 import SwitchField from './SwitchField.vue'
 import TextareaField from './TextareaField.vue'
+import UploadField from './UploadField.vue'
 
 const FIELD_COMPONENTS: Partial<Record<FieldType, Component>> = {
   input: InputField,
@@ -21,6 +22,7 @@ const FIELD_COMPONENTS: Partial<Record<FieldType, Component>> = {
   select: SelectField,
   date: DateField,
   switch: SwitchField,
+  upload: UploadField,
 }
 
 export function fieldComponent(type: FieldType): Component | undefined {

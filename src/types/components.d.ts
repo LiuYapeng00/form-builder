@@ -39,5 +39,6 @@ declare module 'vue' {
     SelectField: typeof import('./../components/fields/SelectField.vue')['default']
     SwitchField: typeof import('./../components/fields/SwitchField.vue')['default']
     TextareaField: typeof import('./../components/fields/TextareaField.vue')['default']
+    UploadField: typeof import('./../components/fields/UploadField.vue')['default']
   }
 }
