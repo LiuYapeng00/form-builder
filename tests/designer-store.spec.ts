@@ -144,6 +144,20 @@ describe('画布操作', () => {
     expect(store.schema.fields[1]?.id).toBe(first.id)
     expect(store.history.past).toHaveLength(historyBefore + 1)
   })
+
+  it('拖拽回传的代理数组写回后仍能继续 commit（DataCloneError 回归）', () => {
+    const store = useDesignerStore()
+    // 模拟拖拽库回传的数组：元素是从响应式数组读出来的 Proxy
+    const fromDraggable = [...store.schema.fields].reverse()
+
+    store.replaceFields(fromDraggable)
+    expect(store.schema.fields.map((field) => field.id)).toEqual(
+      fromDraggable.map((field) => field.id),
+    )
+
+    // 下一次 commit 会 structuredClone 整棵树；若写回的是 Proxy 这里会抛错
+    expect(() => store.commit((draft) => (draft.name = '拖拽后继续编辑'))).not.toThrow()
+  })
 })
 
 describe('commit', () => {

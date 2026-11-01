@@ -108,6 +108,7 @@ const children = computed(() => props.field.children ?? [])
   align-items: center;
   gap: 6px;
   min-height: 34px;
+  cursor: grab;
 }
 
 .card__icon {

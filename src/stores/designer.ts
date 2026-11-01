@@ -64,6 +64,19 @@ export const useDesignerStore = defineStore('designer', () => {
     select(field.id)
   }
 
+  /**
+   * 拖拽后写回根字段顺序（T16）
+   *
+   * vue-draggable-plus 对 ref/computed 模型是"生成新数组再赋值"，
+   * 所以这里拿到的 next 是全新数组，快照仍在赋值前拍，历史不会漏。
+   * 但数组元素是响应式代理，必须 toRaw 后写回：否则下一次 structuredClone 会抛 DataCloneError。
+   */
+  function replaceFields(next: FieldNode[]): void {
+    commit((draft) => {
+      draft.fields = next.map((field) => toRaw(field))
+    })
+  }
+
   /** 删除字段（含子表单内的字段）；不存在的 id 直接忽略，不产生空历史 */
   function removeField(id: string): void {
     if (!locateField(schema.value.fields, id)) return
@@ -128,6 +141,7 @@ export const useDesignerStore = defineStore('designer', () => {
     selectedField,
     select,
     addField,
+    replaceFields,
     removeField,
     duplicateField,
     moveField,
