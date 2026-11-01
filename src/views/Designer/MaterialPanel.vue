@@ -1,11 +1,20 @@
 <script setup lang="ts">
 /**
- * 物料区占位（T13）
+ * 物料区（T14）
  *
- * 只从注册表渲染类型名，证明"物料区由 field-meta 驱动"；
- * 点击添加在 T14，拖拽在 T16。
+ * 只从注册表渲染类型与图标；点击即添加到根画布。
+ * 拖拽在 T16 接入，届时这里保留点击作为拖拽的兜底操作。
  */
 import { FIELD_META_LIST } from '@/core/meta/field-meta'
+import type { FieldType } from '@/core/schema/types'
+import { useDesignerStore } from '@/stores/designer'
+import { fieldIcon } from './field-icons'
+
+const store = useDesignerStore()
+
+function add(type: FieldType): void {
+  store.addField(type)
+}
 </script>
 
 <template>
@@ -13,12 +22,19 @@ import { FIELD_META_LIST } from '@/core/meta/field-meta'
     <h2 class="panel__title">物料</h2>
 
     <ul class="materials">
-      <li v-for="meta in FIELD_META_LIST" :key="meta.type" class="material">
-        {{ meta.label }}
+      <li v-for="meta in FIELD_META_LIST" :key="meta.type">
+        <button type="button" class="material" @click="add(meta.type)">
+          <component
+            :is="fieldIcon(meta.icon)"
+            v-if="fieldIcon(meta.icon)"
+            class="material__icon"
+          />
+          <span>{{ meta.label }}</span>
+        </button>
       </li>
     </ul>
 
-    <p class="panel__hint">T14 接入点击添加</p>
+    <p class="panel__hint">点击添加到画布</p>
   </aside>
 </template>
 
@@ -56,11 +72,27 @@ import { FIELD_META_LIST } from '@/core/meta/field-meta'
 }
 
 .material {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
   padding: 8px 6px;
   border: 1px solid var(--fb-border);
   border-radius: 6px;
   background: var(--fb-bg);
+  color: inherit;
   font-size: 12px;
-  text-align: center;
+  cursor: pointer;
+}
+
+.material:hover {
+  border-color: #409eff;
+  color: #409eff;
+}
+
+.material__icon {
+  width: 14px;
+  height: 14px;
 }
 </style>

@@ -40,6 +40,43 @@ describe('选中态', () => {
   })
 })
 
+describe('addField', () => {
+  it('追加到末尾并自动选中，id / name 唯一', () => {
+    const store = useDesignerStore()
+    const before = store.schema.fields.length
+
+    store.addField('input')
+    store.addField('select')
+
+    const added = store.schema.fields.slice(-2)
+    expect(store.schema.fields).toHaveLength(before + 2)
+    expect(added[0]!.type).toBe('input')
+    expect(added[0]!.id).not.toBe(added[1]!.id)
+    expect(added[0]!.name).not.toBe(added[1]!.name)
+    expect(store.selectedId).toBe(added[1]!.id)
+  })
+
+  it('每次新增的 props 互不共享', () => {
+    const store = useDesignerStore()
+    store.addField('select')
+    store.addField('select')
+
+    const [first, second] = store.schema.fields.slice(-2)
+    first!.props.options!.push({ label: '选项三', value: 'option3' })
+
+    expect(second!.props.options).toHaveLength(2)
+  })
+
+  it('每次新增都压一条历史', () => {
+    const store = useDesignerStore()
+    const before = store.history.past.length
+
+    store.addField('input')
+
+    expect(store.history.past).toHaveLength(before + 1)
+  })
+})
+
 describe('commit', () => {
   it('压入改动前的整树快照', () => {
     const store = useDesignerStore()

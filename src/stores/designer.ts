@@ -8,7 +8,8 @@
  */
 import { defineStore } from 'pinia'
 import { computed, ref, toRaw } from 'vue'
-import type { FieldNode, FormSchema } from '@/core/schema/types'
+import { createField } from '@/core/schema/factory'
+import type { FieldNode, FieldType, FormSchema } from '@/core/schema/types'
 import { leaveSampleSchema } from '@/samples/leave'
 
 /** 历史上限：100 字段 schema ≈ 50KB，50 份 ≈ 2.5MB，见 §6 */
@@ -45,6 +46,15 @@ export const useDesignerStore = defineStore('designer', () => {
     selectedId.value = id
   }
 
+  /** 点击物料：造一个新节点追加到根画布，并选中它方便接着改属性 */
+  function addField(type: FieldType): void {
+    const field = createField(type)
+    commit((draft) => {
+      draft.fields.push(field)
+    })
+    select(field.id)
+  }
+
   function commit(mutator: (draft: FormSchema) => void): void {
     // 快照必须在 mutator 之前拍；toRaw 是必需的：structuredClone 克隆不了 Vue 的 Proxy
     const snapshot = structuredClone(toRaw(schema.value))
@@ -61,5 +71,5 @@ export const useDesignerStore = defineStore('designer', () => {
     }
   }
 
-  return { schema, selectedId, history, selectedField, select, commit }
+  return { schema, selectedId, history, selectedField, select, addField, commit }
 })
