@@ -77,6 +77,75 @@ describe('addField', () => {
   })
 })
 
+describe('画布操作', () => {
+  it('复制字段：插在原字段后面、id 唯一、引用不共享', () => {
+    const store = useDesignerStore()
+    store.addField('select')
+
+    const source = store.schema.fields.at(-1)!
+    store.duplicateField(source.id)
+
+    const fields = store.schema.fields
+    const copy = fields.at(-1)!
+    expect(fields.at(-2)?.id).toBe(source.id)
+    expect(copy.id).not.toBe(source.id)
+    expect(copy.name).not.toBe(source.name)
+    expect(store.selectedId).toBe(copy.id)
+
+    copy.props.options![0]!.label = '改坏了'
+    expect(source.props.options?.[0]?.label).toBe('选项一')
+  })
+
+  it('复制子表单：子字段 id 也全部换新', () => {
+    const store = useDesignerStore()
+    const subform = store.schema.fields.find((field) => field.type === 'subform')!
+    const childIds = subform.children!.map((child) => child.id)
+
+    store.duplicateField(subform.id)
+
+    const copy = store.schema.fields.at(-1)!
+    expect(copy.children).toHaveLength(childIds.length)
+    expect(copy.children!.every((child) => !childIds.includes(child.id))).toBe(true)
+  })
+
+  it('删除顶层字段并清空选中', () => {
+    const store = useDesignerStore()
+    const target = store.schema.fields[0]!
+
+    store.select(target.id)
+    store.removeField(target.id)
+
+    expect(store.schema.fields.some((field) => field.id === target.id)).toBe(false)
+    expect(store.selectedId).toBeNull()
+  })
+
+  it('删除子表单里的字段', () => {
+    const store = useDesignerStore()
+    const subform = store.schema.fields.find((field) => field.type === 'subform')!
+    const childId = subform.children![0]!.id
+
+    store.removeField(childId)
+
+    const after = store.schema.fields.find((field) => field.type === 'subform')!
+    expect(after.children?.some((child) => child.id === childId)).toBe(false)
+  })
+
+  it('上移 / 下移只在同一层内交换，边界不产生历史', () => {
+    const store = useDesignerStore()
+    const first = store.schema.fields[0]!
+    const second = store.schema.fields[1]!
+    const historyBefore = store.history.past.length
+
+    store.moveField(first.id, -1)
+    expect(store.history.past).toHaveLength(historyBefore)
+
+    store.moveField(first.id, 1)
+    expect(store.schema.fields[0]?.id).toBe(second.id)
+    expect(store.schema.fields[1]?.id).toBe(first.id)
+    expect(store.history.past).toHaveLength(historyBefore + 1)
+  })
+})
+
 describe('commit', () => {
   it('压入改动前的整树快照', () => {
     const store = useDesignerStore()

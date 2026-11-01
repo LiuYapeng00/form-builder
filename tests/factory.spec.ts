@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createEmptySchema, createField, getDefaultProps } from '@/core/schema/factory'
+import { cloneField, createEmptySchema, createField, getDefaultProps } from '@/core/schema/factory'
 import { FIELD_TYPES } from '@/core/schema/types'
 
 describe('createField', () => {
@@ -77,6 +77,36 @@ describe('createEmptySchema', () => {
 
     expect(a.name).toBe('未命名表单')
     expect(a.id).not.toBe(b.id)
+  })
+})
+
+describe('cloneField', () => {
+  it('深拷贝并重新生成所有层级 id，根 name 换新', () => {
+    const source = createField('subform', {
+      name: 'handover',
+      label: '交接',
+      children: [createField('input', { name: 'item' }), createField('date', { name: 'date' })],
+    })
+
+    const copy = cloneField(source)
+
+    expect(copy.id).not.toBe(source.id)
+    expect(copy.name).not.toBe(source.name)
+    expect(copy.children).toHaveLength(2)
+    expect(copy.children?.[0]?.id).not.toBe(source.children?.[0]?.id)
+    // 子字段 name 属于新作用域，可以保留
+    expect(copy.children?.[0]?.name).toBe('item')
+  })
+
+  it('引用不共享：改副本不影响原件', () => {
+    const source = createField('select')
+    const copy = cloneField(source)
+
+    copy.props.options![0]!.label = '改坏了'
+    copy.rules.push({ type: 'required' })
+
+    expect(source.props.options?.[0]?.label).toBe('选项一')
+    expect(source.rules).toEqual([])
   })
 })
 

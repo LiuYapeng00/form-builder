@@ -29,11 +29,7 @@ const selectionText = computed(() =>
 
     <div class="workspace">
       <MaterialPanel />
-      <Canvas
-        :fields="store.schema.fields"
-        :selected-id="store.selectedId"
-        @select="store.select"
-      />
+      <Canvas />
       <PropertyPanel :field="store.selectedField ?? null" />
     </div>
   </div>

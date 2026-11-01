@@ -1,46 +1,35 @@
 <script setup lang="ts">
 /**
- * 画布占位（T13）
+ * 画布（T15）
  *
- * T13 只需要证明"点击字段能切换选中"，所以先用列表渲染顶层字段；
- * T15 换成 RecursiveForm 的设计态渲染 + 选中高亮 / 删除 / 复制 / 排序。
+ * 设计态不复用 RecursiveForm：运行态渲染的是"按值渲染的行"，
+ * 设计态渲染的是"按 schema 渲染的节点 + 选中 / 删除 / 复制 / 排序"。
+ * 子表单在设计态没有行数据，所以必须单独走一套递归渲染。
  */
-import { getFieldMeta } from '@/core/meta/field-meta'
-import type { FieldNode } from '@/core/schema/types'
+import { useDesignerStore } from '@/stores/designer'
+import FieldCard from './FieldCard.vue'
 
-defineProps<{
-  fields: FieldNode[]
-  selectedId: string | null
-}>()
-
-const emit = defineEmits<{
-  select: [id: string]
-}>()
+const store = useDesignerStore()
 </script>
 
 <template>
-  <main class="canvas">
+  <main class="canvas" @click="store.select(null)">
     <header class="canvas__head">
       <h2 class="canvas__title">画布</h2>
-      <span class="canvas__hint">点击字段可选中</span>
+      <span class="canvas__hint">点击字段选中，选中后可删除 / 复制 / 排序</span>
     </header>
 
-    <el-empty v-if="fields.length === 0" description="还没有字段" />
+    <el-empty v-if="store.schema.fields.length === 0" description="点击左侧物料添加字段" />
 
-    <ul v-else class="field-list">
-      <li
-        v-for="field in fields"
+    <div v-else class="field-list">
+      <FieldCard
+        v-for="(field, index) in store.schema.fields"
         :key="field.id"
-        class="field-item"
-        :class="{ 'is-selected': field.id === selectedId }"
-        @click="emit('select', field.id)"
-      >
-        <span class="field-item__label">{{ field.label }}</span>
-        <span class="field-item__meta"
-          >{{ getFieldMeta(field.type).label }} · {{ field.name }}</span
-        >
-      </li>
-    </ul>
+        :field="field"
+        :index="index"
+        :total="store.schema.fields.length"
+      />
+    </div>
   </main>
 </template>
 
@@ -55,6 +44,7 @@ const emit = defineEmits<{
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
@@ -73,38 +63,5 @@ const emit = defineEmits<{
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.field-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--fb-border);
-  border-radius: 6px;
-  background: var(--fb-bg);
-  cursor: pointer;
-}
-
-.field-item:hover {
-  border-color: #c7ccd4;
-}
-
-.field-item.is-selected {
-  border-color: #409eff;
-  box-shadow: 0 0 0 2px rgb(64 158 255 / 18%);
-}
-
-.field-item__label {
-  font-size: 13px;
-}
-
-.field-item__meta {
-  color: var(--fb-text-muted);
-  font-size: 12px;
 }
 </style>

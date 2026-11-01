@@ -8,7 +8,7 @@
  */
 import { defineStore } from 'pinia'
 import { computed, ref, toRaw } from 'vue'
-import { createField } from '@/core/schema/factory'
+import { cloneField, createField } from '@/core/schema/factory'
 import type { FieldNode, FieldType, FormSchema } from '@/core/schema/types'
 import { leaveSampleSchema } from '@/samples/leave'
 
@@ -22,11 +22,20 @@ export interface DesignerHistory {
   future: FormSchema[]
 }
 
-/** 递归查找：子表单里的字段也要能选中，所以不能只看顶层 */
-function findField(fields: FieldNode[], id: string): FieldNode | undefined {
-  for (const field of fields) {
-    if (field.id === id) return field
-    const hit = field.children ? findField(field.children, id) : undefined
+/** 字段在树中的位置：父级数组 + 下标 + 节点本身 */
+interface FieldLocation {
+  siblings: FieldNode[]
+  index: number
+  field: FieldNode
+}
+
+/** 递归查找字段位置：删除 / 复制 / 排序都要先定位到它的兄弟数组 */
+function locateField(fields: FieldNode[], id: string): FieldLocation | undefined {
+  for (let index = 0; index < fields.length; index += 1) {
+    const field = fields[index]!
+    if (field.id === id) return { siblings: fields, index, field }
+
+    const hit = field.children ? locateField(field.children, id) : undefined
     if (hit) return hit
   }
   return undefined
@@ -39,7 +48,7 @@ export const useDesignerStore = defineStore('designer', () => {
   const history = ref<DesignerHistory>({ past: [], future: [] })
 
   const selectedField = computed(() =>
-    selectedId.value ? findField(schema.value.fields, selectedId.value) : undefined,
+    selectedId.value ? locateField(schema.value.fields, selectedId.value)?.field : undefined,
   )
 
   function select(id: string | null): void {
@@ -55,6 +64,47 @@ export const useDesignerStore = defineStore('designer', () => {
     select(field.id)
   }
 
+  /** 删除字段（含子表单内的字段）；不存在的 id 直接忽略，不产生空历史 */
+  function removeField(id: string): void {
+    if (!locateField(schema.value.fields, id)) return
+
+    commit((draft) => {
+      const location = locateField(draft.fields, id)
+      if (location) location.siblings.splice(location.index, 1)
+    })
+  }
+
+  /** 复制字段并插到原字段后面；深拷贝 + 全层级新 id，见 core/schema/factory.cloneField */
+  function duplicateField(id: string): void {
+    const source = locateField(schema.value.fields, id)
+    if (!source) return
+
+    // locateField 返回的是响应式代理，structuredClone 只认 raw 对象
+    const copy = cloneField(toRaw(source.field))
+
+    commit((draft) => {
+      const location = locateField(draft.fields, id)
+      if (location) location.siblings.splice(location.index + 1, 0, copy)
+    })
+    select(copy.id)
+  }
+
+  /** 上移 / 下移一位；到边界时直接返回，避免产生没有变化的历史记录 */
+  function moveField(id: string, offset: -1 | 1): void {
+    const source = locateField(schema.value.fields, id)
+    if (!source) return
+
+    const target = source.index + offset
+    if (target < 0 || target >= source.siblings.length) return
+
+    commit((draft) => {
+      const location = locateField(draft.fields, id)
+      if (!location) return
+      const [field] = location.siblings.splice(location.index, 1)
+      if (field) location.siblings.splice(target, 0, field)
+    })
+  }
+
   function commit(mutator: (draft: FormSchema) => void): void {
     // 快照必须在 mutator 之前拍；toRaw 是必需的：structuredClone 克隆不了 Vue 的 Proxy
     const snapshot = structuredClone(toRaw(schema.value))
@@ -66,10 +116,21 @@ export const useDesignerStore = defineStore('designer', () => {
     history.value.future = []
 
     // 字段被删掉时清掉悬空选中，避免属性面板指向不存在的节点
-    if (selectedId.value && !findField(schema.value.fields, selectedId.value)) {
+    if (selectedId.value && !locateField(schema.value.fields, selectedId.value)) {
       selectedId.value = null
     }
   }
 
-  return { schema, selectedId, history, selectedField, select, addField, commit }
+  return {
+    schema,
+    selectedId,
+    history,
+    selectedField,
+    select,
+    addField,
+    removeField,
+    duplicateField,
+    moveField,
+    commit,
+  }
 })

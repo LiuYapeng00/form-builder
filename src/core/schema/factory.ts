@@ -61,3 +61,26 @@ export function createEmptySchema(name = '未命名表单'): FormSchema {
     submit: { text: '提交', successMsg: '提交成功' },
   }
 }
+
+/**
+ * 复制字段（T15）
+ *
+ * 两层要求：
+ * 1. 引用不共享：structuredClone 深拷贝，否则改副本会连带改原件；
+ * 2. id 全层级重新生成：id 是设计器的选中 key，重复会让选中态错乱。
+ * 根节点同时换 name（同级唯一）；子字段 name 属于新作用域，可以保留。
+ *
+ * 注意：内部用 structuredClone，Vue 调用方必须先 toRaw（Proxy 不可克隆）。
+ */
+export function cloneField(source: FieldNode): FieldNode {
+  const clone = cloneNode(source)
+  clone.name = `${source.type}_${nanoid(8)}`
+  return clone
+}
+
+function cloneNode(source: FieldNode): FieldNode {
+  const clone = structuredClone(source)
+  clone.id = nanoid()
+  if (clone.children) clone.children = clone.children.map((child) => cloneNode(child))
+  return clone
+}
