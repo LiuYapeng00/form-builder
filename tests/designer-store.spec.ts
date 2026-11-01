@@ -247,6 +247,27 @@ describe('updateField', () => {
   })
 })
 
+describe('siblingsOf', () => {
+  it('返回同级字段：根字段给根列表，子表单字段给子列表', () => {
+    const store = useDesignerStore()
+    const root = store.schema.fields[0]!
+    const subform = store.schema.fields.find((field) => field.type === 'subform')!
+    const child = subform.children![0]!
+
+    expect(store.siblingsOf(root.id).map((field) => field.id)).toEqual(
+      store.schema.fields.map((field) => field.id),
+    )
+    expect(store.siblingsOf(child.id).map((field) => field.id)).toEqual(
+      subform.children!.map((field) => field.id),
+    )
+  })
+
+  it('未知 id 返回空数组', () => {
+    const store = useDesignerStore()
+    expect(store.siblingsOf('not-exist')).toEqual([])
+  })
+})
+
 describe('commit', () => {
   it('压入改动前的整树快照', () => {
     const store = useDesignerStore()

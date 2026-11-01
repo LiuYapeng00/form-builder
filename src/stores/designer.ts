@@ -135,6 +135,16 @@ export const useDesignerStore = defineStore('designer', () => {
     })
   }
 
+  /** 同级字段：属性面板的联动条件只能依赖同一作用域里的字段（T19） */
+  function siblingsOf(id: string): FieldNode[] {
+    return locateField(schema.value.fields, id)?.siblings ?? []
+  }
+
+  /** 按 id 取字段：属性面板用它做 diff，无效输入不产生空历史（T19） */
+  function fieldById(id: string): FieldNode | undefined {
+    return locateField(schema.value.fields, id)?.field
+  }
+
   /**
    * 属性面板写字段（T18）
    *
@@ -178,6 +188,8 @@ export const useDesignerStore = defineStore('designer', () => {
     removeField,
     duplicateField,
     moveField,
+    siblingsOf,
+    fieldById,
     updateField,
     commit,
   }
