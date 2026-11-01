@@ -268,6 +268,108 @@ describe('siblingsOf', () => {
   })
 })
 
+describe('undo / redo', () => {
+  it('逐步撤销再重做，顺序正确', () => {
+    const store = useDesignerStore()
+    const initial = store.schema.name
+
+    store.commit((draft) => {
+      draft.name = '第一步'
+    })
+    store.commit((draft) => {
+      draft.name = '第二步'
+    })
+
+    store.undo()
+    expect(store.schema.name).toBe('第一步')
+    store.undo()
+    expect(store.schema.name).toBe(initial)
+
+    store.redo()
+    expect(store.schema.name).toBe('第一步')
+    store.redo()
+    expect(store.schema.name).toBe('第二步')
+  })
+
+  it('连续 20 步后逐步撤销结果正确', () => {
+    const store = useDesignerStore()
+    const initial = store.schema.name
+
+    for (let i = 1; i <= 20; i += 1) {
+      store.commit((draft) => {
+        draft.name = `第 ${i} 步`
+      })
+    }
+
+    for (let i = 19; i >= 0; i -= 1) {
+      store.undo()
+      expect(store.schema.name).toBe(i === 0 ? initial : `第 ${i} 步`)
+    }
+
+    expect(store.history.past).toHaveLength(0)
+    expect(store.history.future).toHaveLength(20)
+  })
+
+  it('空栈时 undo / redo 不改数据', () => {
+    const store = useDesignerStore()
+    const before = structuredClone(toRaw(store.schema))
+
+    store.undo()
+    store.redo()
+
+    expect(structuredClone(toRaw(store.schema))).toEqual(before)
+    expect(store.history.past).toHaveLength(0)
+    expect(store.history.future).toHaveLength(0)
+  })
+
+  it('撤销后字段仍存在则保留选中，被删字段不猜选中', () => {
+    const store = useDesignerStore()
+    const target = store.schema.fields[0]!
+
+    store.select(target.id)
+    store.addField('input')
+    store.select(target.id)
+    store.undo()
+    expect(store.selectedId).toBe(target.id)
+
+    store.removeField(target.id)
+    expect(store.selectedId).toBeNull()
+    store.undo()
+    expect(store.schema.fields.some((field) => field.id === target.id)).toBe(true)
+    expect(store.selectedId).toBeNull()
+  })
+
+  it('撤销后产生新操作会清空重做栈', () => {
+    const store = useDesignerStore()
+
+    store.commit((draft) => {
+      draft.name = 'A'
+    })
+    store.undo()
+    expect(store.history.future).toHaveLength(1)
+
+    store.commit((draft) => {
+      draft.name = 'B'
+    })
+    expect(store.history.future).toHaveLength(0)
+  })
+
+  it('撤销后继续 commit 不会因代理快照报错', () => {
+    const store = useDesignerStore()
+
+    store.commit((draft) => {
+      draft.name = 'A'
+    })
+    store.undo()
+
+    expect(() =>
+      store.commit((draft) => {
+        draft.name = 'B'
+      }),
+    ).not.toThrow()
+  })
+})
+
 describe('commit', () => {
   it('压入改动前的整树快照', () => {
     const store = useDesignerStore()

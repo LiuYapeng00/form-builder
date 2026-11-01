@@ -160,6 +160,37 @@ export const useDesignerStore = defineStore('designer', () => {
     })
   }
 
+  /**
+   * 撤销 / 重做（T20）
+   *
+   * 整树快照互换：把当前树压进另一个栈，再取出快照当新树。
+   * 快照存的是普通对象，取出后直接赋值即可；下一次 commit 会 toRaw 后再克隆。
+   */
+  function undo(): void {
+    const previous = history.value.past.pop()
+    if (!previous) return
+
+    history.value.future.push(structuredClone(toRaw(schema.value)))
+    schema.value = previous
+    syncSelection()
+  }
+
+  function redo(): void {
+    const next = history.value.future.pop()
+    if (!next) return
+
+    history.value.past.push(structuredClone(toRaw(schema.value)))
+    schema.value = next
+    syncSelection()
+  }
+
+  /** 快照互换后选中的字段可能已不存在，清掉悬空选中 */
+  function syncSelection(): void {
+    if (selectedId.value && !locateField(schema.value.fields, selectedId.value)) {
+      selectedId.value = null
+    }
+  }
+
   function commit(mutator: (draft: FormSchema) => void): void {
     // 快照必须在 mutator 之前拍；toRaw 是必需的：structuredClone 克隆不了 Vue 的 Proxy
     const snapshot = structuredClone(toRaw(schema.value))
@@ -171,9 +202,7 @@ export const useDesignerStore = defineStore('designer', () => {
     history.value.future = []
 
     // 字段被删掉时清掉悬空选中，避免属性面板指向不存在的节点
-    if (selectedId.value && !locateField(schema.value.fields, selectedId.value)) {
-      selectedId.value = null
-    }
+    syncSelection()
   }
 
   return {
@@ -191,6 +220,8 @@ export const useDesignerStore = defineStore('designer', () => {
     siblingsOf,
     fieldById,
     updateField,
+    undo,
+    redo,
     commit,
   }
 })

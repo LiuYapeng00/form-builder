@@ -446,9 +446,15 @@ function setConditionValue(value: unknown): void {
   schedule()
 }
 
+/** 下拉 / 数字框是离散选择，直接落库，避免"选完立刻点撤销"时草稿还没提交 */
+function setConditionValueNow(value: unknown): void {
+  draft.condition.value = normalizeConditionValue(value)
+  flush()
+}
+
 function resetConditionValue(): void {
   draft.condition.value = null
-  schedule()
+  flush()
 }
 
 function addOption(): void {
@@ -456,13 +462,13 @@ function addOption(): void {
   let index = draft.options.length + 1
   while (used.has(`option${index}`)) index += 1
   draft.options.push({ label: `选项${index}`, value: `option${index}` })
-  schedule()
+  flush()
 }
 
 function removeOption(index: number): void {
   if (draft.options.length <= 1) return
   draft.options.splice(index, 1)
-  schedule()
+  flush()
 }
 
 // 只在"换字段"时重载草稿：面板自己写 store 不会换节点引用，不会打断输入
@@ -492,7 +498,12 @@ onBeforeUnmount(flush)
       <el-tab-pane label="基础" name="basic">
         <el-form label-position="top" size="small">
           <el-form-item label="标题">
-            <el-input v-model="draft.label" placeholder="字段标题" @input="schedule" />
+            <el-input
+              v-model="draft.label"
+              placeholder="字段标题"
+              @input="schedule"
+              @blur="flush"
+            />
           </el-form-item>
 
           <el-form-item label="字段名">
@@ -501,20 +512,26 @@ onBeforeUnmount(flush)
               class="mono"
               placeholder="提交时的 key"
               @input="schedule"
+              @blur="flush"
             />
             <p class="hint">同级唯一，作为提交数据的 key</p>
           </el-form-item>
 
           <el-form-item v-if="supportsPlaceholder" label="占位提示">
-            <el-input v-model="draft.placeholder" placeholder="请输入" @input="schedule" />
+            <el-input
+              v-model="draft.placeholder"
+              placeholder="请输入"
+              @input="schedule"
+              @blur="flush"
+            />
           </el-form-item>
 
           <el-form-item v-if="supportsRequired" label="必填">
-            <el-switch v-model="draft.rules.required.enabled" @change="schedule" />
+            <el-switch v-model="draft.rules.required.enabled" @change="flush" />
           </el-form-item>
 
           <el-form-item label="跨列数">
-            <el-input-number v-model="draft.span" :min="1" :max="4" :step="1" @change="schedule" />
+            <el-input-number v-model="draft.span" :min="1" :max="4" :step="1" @change="flush" />
             <p class="hint">栅格布局下占几列，单列布局无影响</p>
           </el-form-item>
 
@@ -531,14 +548,25 @@ onBeforeUnmount(flush)
 
         <el-form v-else label-position="top" size="small">
           <el-form-item v-if="supportsMultiple" label="允许多选">
-            <el-switch v-model="draft.multiple" @change="schedule" />
+            <el-switch v-model="draft.multiple" @change="flush" />
           </el-form-item>
 
           <el-form-item label="选项">
             <div class="options">
               <div v-for="(option, index) in draft.options" :key="index" class="option">
-                <el-input v-model="option.label" placeholder="显示文字" @input="schedule" />
-                <el-input v-model="option.value" class="mono" placeholder="值" @input="schedule" />
+                <el-input
+                  v-model="option.label"
+                  placeholder="显示文字"
+                  @input="schedule"
+                  @blur="flush"
+                />
+                <el-input
+                  v-model="option.value"
+                  class="mono"
+                  placeholder="值"
+                  @input="schedule"
+                  @blur="flush"
+                />
                 <el-button
                   text
                   :icon="Delete"
@@ -566,20 +594,21 @@ onBeforeUnmount(flush)
         <el-form v-else label-position="top" size="small">
           <template v-if="supportsRule('required')">
             <el-form-item label="必填">
-              <el-switch v-model="draft.rules.required.enabled" @change="schedule" />
+              <el-switch v-model="draft.rules.required.enabled" @change="flush" />
             </el-form-item>
             <el-form-item v-if="draft.rules.required.enabled" label="必填提示">
               <el-input
                 v-model="draft.rules.required.message"
                 placeholder="留空使用默认提示"
                 @input="schedule"
+                @blur="flush"
               />
             </el-form-item>
           </template>
 
           <template v-if="supportsRule('pattern')">
             <el-form-item label="正则校验">
-              <el-switch v-model="draft.rules.pattern.enabled" @change="schedule" />
+              <el-switch v-model="draft.rules.pattern.enabled" @change="flush" />
             </el-form-item>
             <el-form-item v-if="draft.rules.pattern.enabled" label="正则表达式">
               <el-input
@@ -587,6 +616,7 @@ onBeforeUnmount(flush)
                 class="mono"
                 placeholder="^\d{11}$"
                 @input="schedule"
+                @blur="flush"
               />
               <p v-if="patternError" class="hint hint--error">{{ patternError }}</p>
             </el-form-item>
@@ -595,13 +625,14 @@ onBeforeUnmount(flush)
                 v-model="draft.rules.pattern.message"
                 placeholder="留空使用默认提示"
                 @input="schedule"
+                @blur="flush"
               />
             </el-form-item>
           </template>
 
           <template v-if="supportsRule('range')">
             <el-form-item label="数值范围">
-              <el-switch v-model="draft.rules.range.enabled" @change="schedule" />
+              <el-switch v-model="draft.rules.range.enabled" @change="flush" />
             </el-form-item>
             <template v-if="draft.rules.range.enabled">
               <el-form-item label="最小值 / 最大值">
@@ -610,13 +641,13 @@ onBeforeUnmount(flush)
                     v-model="draft.rules.range.min"
                     :controls="false"
                     placeholder="不限"
-                    @change="schedule"
+                    @change="flush"
                   />
                   <el-input-number
                     v-model="draft.rules.range.max"
                     :controls="false"
                     placeholder="不限"
-                    @change="schedule"
+                    @change="flush"
                   />
                 </div>
                 <p v-if="rangeError" class="hint hint--error">{{ rangeError }}</p>
@@ -626,6 +657,7 @@ onBeforeUnmount(flush)
                   v-model="draft.rules.range.message"
                   placeholder="留空使用默认提示"
                   @input="schedule"
+                  @blur="flush"
                 />
               </el-form-item>
             </template>
@@ -633,7 +665,7 @@ onBeforeUnmount(flush)
 
           <template v-if="supportsRule('len')">
             <el-form-item label="长度范围">
-              <el-switch v-model="draft.rules.len.enabled" @change="schedule" />
+              <el-switch v-model="draft.rules.len.enabled" @change="flush" />
             </el-form-item>
             <template v-if="draft.rules.len.enabled">
               <el-form-item label="最少 / 最多字数">
@@ -642,13 +674,13 @@ onBeforeUnmount(flush)
                     v-model="draft.rules.len.min"
                     :controls="false"
                     placeholder="不限"
-                    @change="schedule"
+                    @change="flush"
                   />
                   <el-input-number
                     v-model="draft.rules.len.max"
                     :controls="false"
                     placeholder="不限"
-                    @change="schedule"
+                    @change="flush"
                   />
                 </div>
                 <p v-if="lenError" class="hint hint--error">{{ lenError }}</p>
@@ -658,6 +690,7 @@ onBeforeUnmount(flush)
                   v-model="draft.rules.len.message"
                   placeholder="留空使用默认提示"
                   @input="schedule"
+                  @blur="flush"
                 />
               </el-form-item>
             </template>
@@ -668,7 +701,7 @@ onBeforeUnmount(flush)
       <el-tab-pane label="联动" name="linkage">
         <el-form label-position="top" size="small">
           <el-form-item label="启用联动">
-            <el-switch v-model="draft.condition.enabled" @change="schedule" />
+            <el-switch v-model="draft.condition.enabled" @change="flush" />
           </el-form-item>
 
           <template v-if="draft.condition.enabled">
@@ -691,7 +724,7 @@ onBeforeUnmount(flush)
             </el-form-item>
 
             <el-form-item label="条件">
-              <el-select v-model="draft.condition.op" @change="schedule">
+              <el-select v-model="draft.condition.op" @change="flush">
                 <el-option
                   v-for="op in CONDITION_OPS"
                   :key="op.value"
@@ -705,7 +738,7 @@ onBeforeUnmount(flush)
               <el-select
                 v-if="conditionValueKind === 'boolean'"
                 :model-value="draft.condition.value"
-                @update:model-value="setConditionValue"
+                @update:model-value="setConditionValueNow"
               >
                 <el-option label="是" :value="true" />
                 <el-option label="否" :value="false" />
@@ -714,7 +747,7 @@ onBeforeUnmount(flush)
               <el-select
                 v-else-if="conditionValueKind === 'options'"
                 :model-value="draft.condition.value"
-                @update:model-value="setConditionValue"
+                @update:model-value="setConditionValueNow"
               >
                 <el-option
                   v-for="option in dependencyOptions"
@@ -730,7 +763,7 @@ onBeforeUnmount(flush)
                   typeof draft.condition.value === 'number' ? draft.condition.value : undefined
                 "
                 :controls="false"
-                @update:model-value="setConditionValue"
+                @update:model-value="setConditionValueNow"
               />
 
               <el-input
@@ -738,6 +771,7 @@ onBeforeUnmount(flush)
                 :model-value="conditionText"
                 placeholder="依赖字段的值"
                 @update:model-value="setConditionValue"
+                @blur="flush"
               />
             </el-form-item>
 
