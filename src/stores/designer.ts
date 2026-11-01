@@ -77,6 +77,23 @@ export const useDesignerStore = defineStore('designer', () => {
     })
   }
 
+  /**
+   * 拖拽后写回子表单的子字段顺序（T17）
+   *
+   * 与 replaceFields 同理：回传数组元素是响应式代理，必须 toRaw，
+   * 否则下一次 structuredClone 会抛 DataCloneError。
+   * 父节点不存在或没有 children（不是子表单）时直接忽略，避免误改。
+   */
+  function replaceChildren(parentId: string, next: FieldNode[]): void {
+    if (!locateField(schema.value.fields, parentId)?.field.children) return
+
+    commit((draft) => {
+      const parent = locateField(draft.fields, parentId)?.field
+      if (!parent?.children) return
+      parent.children = next.map((child) => toRaw(child))
+    })
+  }
+
   /** 删除字段（含子表单内的字段）；不存在的 id 直接忽略，不产生空历史 */
   function removeField(id: string): void {
     if (!locateField(schema.value.fields, id)) return
@@ -142,6 +159,7 @@ export const useDesignerStore = defineStore('designer', () => {
     select,
     addField,
     replaceFields,
+    replaceChildren,
     removeField,
     duplicateField,
     moveField,

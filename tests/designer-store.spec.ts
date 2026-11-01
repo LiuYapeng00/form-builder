@@ -160,6 +160,43 @@ describe('画布操作', () => {
   })
 })
 
+describe('replaceChildren', () => {
+  it('写回子表单的子字段顺序，只影响该子表单', () => {
+    const store = useDesignerStore()
+    const subform = store.schema.fields.find((field) => field.type === 'subform')!
+    const rootIds = store.schema.fields.map((field) => field.id)
+    const reversed = [...subform.children!].reverse()
+
+    store.replaceChildren(subform.id, reversed)
+
+    const after = store.schema.fields.find((field) => field.id === subform.id)!
+    expect(after.children?.map((child) => child.id)).toEqual(reversed.map((child) => child.id))
+    expect(store.schema.fields.map((field) => field.id)).toEqual(rootIds)
+  })
+
+  it('代理元素写回后仍能继续 commit（DataCloneError 回归）', () => {
+    const store = useDesignerStore()
+    const subform = store.schema.fields.find((field) => field.type === 'subform')!
+    const fromDraggable = [...subform.children!].reverse()
+
+    store.replaceChildren(subform.id, fromDraggable)
+
+    expect(() => store.commit((draft) => (draft.name = '子表单拖拽后继续编辑'))).not.toThrow()
+  })
+
+  it('父节点不存在或不是子表单时忽略，不产生历史', () => {
+    const store = useDesignerStore()
+    const plain = store.schema.fields.find((field) => field.type !== 'subform')!
+    const historyBefore = store.history.past.length
+
+    store.replaceChildren('not-exist', [])
+    store.replaceChildren(plain.id, [])
+
+    expect(store.history.past).toHaveLength(historyBefore)
+    expect(store.schema.fields.some((field) => field.id === plain.id)).toBe(true)
+  })
+})
+
 describe('commit', () => {
   it('压入改动前的整树快照', () => {
     const store = useDesignerStore()

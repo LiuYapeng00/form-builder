@@ -10,6 +10,7 @@ import { computed, ref } from 'vue'
 import { useDraggable } from 'vue-draggable-plus'
 import type { FieldNode } from '@/core/schema/types'
 import { useDesignerStore } from '@/stores/designer'
+import { allowsNestedDrop } from './drag'
 import FieldCard from './FieldCard.vue'
 
 const store = useDesignerStore()
@@ -31,6 +32,8 @@ useDraggable<FieldNode>(listRef, fieldsModel, {
   // 原生 HTML5 拖拽在部分浏览器/嵌套列表下 ghost 会漂移，统一走 Sortable 的 fallback
   forceFallback: true,
   animation: 150,
+  // 从根画布拖字段时，落在子表单里要让位给子列表
+  onMove: allowsNestedDrop,
   onAdd: (event) => {
     // 物料拖入时 data 是物料元数据，clonedData 才是新造的 FieldNode
     if (event.clonedData?.id) store.select(event.clonedData.id)

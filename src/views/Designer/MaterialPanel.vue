@@ -13,6 +13,7 @@ import type { FieldMeta } from '@/core/meta/field-meta'
 import { createField } from '@/core/schema/factory'
 import type { FieldType } from '@/core/schema/types'
 import { useDesignerStore } from '@/stores/designer'
+import { allowsNestedDrop } from './drag'
 import { fieldIcon } from './field-icons'
 
 const store = useDesignerStore()
@@ -31,6 +32,8 @@ useDraggable<FieldMeta>(listRef, materials, {
   // 与画布保持一致：统一走 Sortable 的 fallback，避免原生 HTML5 拖拽的 ghost 差异
   forceFallback: true,
   animation: 150,
+  // 物料拖拽时源列表是这里，onMove 由它来裁决；落在子表单里要让位给子列表
+  onMove: allowsNestedDrop,
   clone: toField,
 })
 
