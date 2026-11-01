@@ -197,6 +197,56 @@ describe('replaceChildren', () => {
   })
 })
 
+describe('updateField', () => {
+  it('一次编辑写回多个键，只压一条历史', () => {
+    const store = useDesignerStore()
+    const target = store.schema.fields[0]!
+    const originalLabel = target.label
+    const historyBefore = store.history.past.length
+
+    store.updateField(target.id, (field) => {
+      field.label = '新标题'
+      field.props.placeholder = '请输入新内容'
+      field.layout = { span: 2 }
+    })
+
+    const after = store.schema.fields[0]!
+    expect(after.label).toBe('新标题')
+    expect(after.props.placeholder).toBe('请输入新内容')
+    expect(after.layout?.span).toBe(2)
+    expect(store.history.past).toHaveLength(historyBefore + 1)
+    // 快照存的是改动前的值
+    expect(store.history.past.at(-1)?.fields[0]?.label).toBe(originalLabel)
+  })
+
+  it('子表单里的字段也能写', () => {
+    const store = useDesignerStore()
+    const subform = store.schema.fields.find((field) => field.type === 'subform')!
+    const child = subform.children![0]!
+
+    store.updateField(child.id, (field) => {
+      field.label = '子字段新标题'
+      field.rules = [{ type: 'required' }]
+    })
+
+    const after = store.schema.fields.find((field) => field.id === subform.id)!
+    const updated = after.children!.find((field) => field.id === child.id)!
+    expect(updated.label).toBe('子字段新标题')
+    expect(updated.rules).toEqual([{ type: 'required' }])
+  })
+
+  it('未知 id 直接忽略，不产生历史', () => {
+    const store = useDesignerStore()
+    const historyBefore = store.history.past.length
+
+    store.updateField('not-exist', (field) => {
+      field.label = '不该写进去'
+    })
+
+    expect(store.history.past).toHaveLength(historyBefore)
+  })
+})
+
 describe('commit', () => {
   it('压入改动前的整树快照', () => {
     const store = useDesignerStore()

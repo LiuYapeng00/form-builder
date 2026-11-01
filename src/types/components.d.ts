@@ -26,6 +26,8 @@ declare module 'vue' {
     ElRow: typeof import('element-plus/es')['ElRow']
     ElSelect: typeof import('element-plus/es')['ElSelect']
     ElSwitch: typeof import('element-plus/es')['ElSwitch']
+    ElTabPane: typeof import('element-plus/es')['ElTabPane']
+    ElTabs: typeof import('element-plus/es')['ElTabs']
     FieldRenderer: typeof import('./../components/renderer/FieldRenderer.vue')['default']
     InputField: typeof import('./../components/fields/InputField.vue')['default']
     NumberField: typeof import('./../components/fields/NumberField.vue')['default']

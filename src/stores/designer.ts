@@ -135,6 +135,21 @@ export const useDesignerStore = defineStore('designer', () => {
     })
   }
 
+  /**
+   * 属性面板写字段（T18）
+   *
+   * 用 mutator 而不是 patch 对象：一次编辑往往要同时改 label / name / props / rules / layout，
+   * 传对象容易出现"没传的键被当成清空"的坑。改动仍然只经过一次 commit。
+   */
+  function updateField(id: string, mutator: (field: FieldNode) => void): void {
+    if (!locateField(schema.value.fields, id)) return
+
+    commit((draft) => {
+      const location = locateField(draft.fields, id)
+      if (location) mutator(location.field)
+    })
+  }
+
   function commit(mutator: (draft: FormSchema) => void): void {
     // 快照必须在 mutator 之前拍；toRaw 是必需的：structuredClone 克隆不了 Vue 的 Proxy
     const snapshot = structuredClone(toRaw(schema.value))
@@ -163,6 +178,7 @@ export const useDesignerStore = defineStore('designer', () => {
     removeField,
     duplicateField,
     moveField,
+    updateField,
     commit,
   }
 })
