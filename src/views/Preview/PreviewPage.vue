@@ -6,14 +6,29 @@
  * 分享链接解析在 T22 接入，这里先用内置样例 Schema。
  */
 import { computed, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import type { FormInstance } from 'element-plus'
 import RecursiveForm from '@/components/renderer/RecursiveForm.vue'
 import { SUBMISSIONS_KEY, createLocalSubmitAdapter } from '@/core/engine/submit'
 import { createFormValue } from '@/core/engine/values'
 import { buildFormRules } from '@/core/engine/validate'
 import { pruneHiddenValues } from '@/core/engine/visibility'
+import { decodeShare } from '@/core/share'
 import type { SubmitPayload } from '@/core/schema/types'
-import { leaveSampleSchema as schema } from '@/samples/leave'
+import { leaveSampleSchema } from '@/samples/leave'
+
+const route = useRoute()
+// 无 d 参数时保留内置样例（T12 里程碑入口）；坏链接只报错，不渲染半截数据
+const decoded = decodeShare(typeof route.query.d === 'string' ? route.query.d : undefined)
+const schema = decoded.ok ? decoded.data : leaveSampleSchema
+
+const linkError =
+  decoded.ok || decoded.reason === 'empty'
+    ? ''
+    : decoded.reason === 'corrupt'
+      ? '链接数据损坏，无法解析。请让分享者重新生成链接。'
+      : '链接里的表单结构不合法，无法渲染。'
+const linkIssues = decoded.ok || decoded.reason !== 'invalid' ? [] : decoded.issues.slice(0, 10)
 
 const model = reactive(createFormValue(schema.fields))
 const formRef = ref<FormInstance>()
@@ -60,40 +75,62 @@ async function onSubmit(): Promise<void> {
 
 <template>
   <main class="page">
-    <section class="card">
-      <h1>{{ schema.name }}</h1>
-      <p class="hint">一期 W1 里程碑：填完点提交，右侧会显示写入 localStorage 的 JSON 快照。</p>
-
-      <el-alert
-        v-if="submitted"
-        class="success"
-        type="success"
-        :closable="false"
-        show-icon
-        :title="successMsg"
-      >
-        <p class="success__line">
-          提交时间：{{ new Date(submitted.submittedAt).toLocaleString('zh-CN') }}
-        </p>
-        <p class="success__line">已写入 localStorage 键：{{ SUBMISSIONS_KEY }}</p>
-      </el-alert>
-
-      <el-form ref="formRef" :model="model" :rules="formRules" label-position="top" @submit.prevent>
-        <RecursiveForm :fields="schema.fields" :model="model" :layout="schema.layout" />
-
-        <div class="actions">
-          <el-button type="primary" :loading="submitting" @click="onSubmit">
-            {{ schema.submit?.text ?? '提交' }}
-          </el-button>
-        </div>
-      </el-form>
+    <section v-if="linkError" class="card card--error">
+      <h1>链接无效</h1>
+      <p class="hint">{{ linkError }}</p>
+      <ul v-if="linkIssues.length" class="issues">
+        <li v-for="(issue, index) in linkIssues" :key="index">
+          <code>{{ issue.path }}</code
+          >：{{ issue.message }}
+        </li>
+      </ul>
+      <p class="back">
+        <router-link to="/">回到设计器</router-link>
+      </p>
     </section>
 
-    <aside class="snapshot">
-      <h2>提交快照（SubmitPayload）</h2>
-      <pre v-if="submitted">{{ JSON.stringify(submitted, null, 2) }}</pre>
-      <p v-else class="snapshot__empty">提交成功后会在这里展示实际写入的数据。</p>
-    </aside>
+    <template v-else>
+      <section class="card">
+        <h1>{{ schema.name }}</h1>
+        <p class="hint">表单数据只写入本机 localStorage，不会上传到任何服务器。</p>
+
+        <el-alert
+          v-if="submitted"
+          class="success"
+          type="success"
+          :closable="false"
+          show-icon
+          :title="successMsg"
+        >
+          <p class="success__line">
+            提交时间：{{ new Date(submitted.submittedAt).toLocaleString('zh-CN') }}
+          </p>
+          <p class="success__line">已写入 localStorage 键：{{ SUBMISSIONS_KEY }}</p>
+        </el-alert>
+
+        <el-form
+          ref="formRef"
+          :model="model"
+          :rules="formRules"
+          label-position="top"
+          @submit.prevent
+        >
+          <RecursiveForm :fields="schema.fields" :model="model" :layout="schema.layout" />
+
+          <div class="actions">
+            <el-button type="primary" :loading="submitting" @click="onSubmit">
+              {{ schema.submit?.text ?? '提交' }}
+            </el-button>
+          </div>
+        </el-form>
+      </section>
+
+      <aside class="snapshot">
+        <h2>提交快照（SubmitPayload）</h2>
+        <pre v-if="submitted">{{ JSON.stringify(submitted, null, 2) }}</pre>
+        <p v-else class="snapshot__empty">提交成功后会在这里展示实际写入的数据。</p>
+      </aside>
+    </template>
   </main>
 </template>
 
@@ -111,6 +148,28 @@ async function onSubmit(): Promise<void> {
   padding: 24px;
   border: 1px solid var(--fb-border);
   border-radius: 10px;
+}
+
+.card--error {
+  grid-column: 1 / -1;
+  border-color: #fbc4c4;
+}
+
+.issues {
+  margin: 12px 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.issues code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  color: #c45656;
+}
+
+.back {
+  margin: 16px 0 0;
+  font-size: 13px;
 }
 
 .success {
